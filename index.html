@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="tr" class="h-full">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Matematik">
+
+    <title>Büyülü Çarpım Tablosu - AI Akıllı Evren</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Quicksand:wght@400;600&display=swap"
+        rel="stylesheet">
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, getDocs, doc, setDoc, query, where } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+
+        if (typeof __firebase_config !== 'undefined') {
+            const firebaseConfig = JSON.parse(__firebase_config);
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const db = getFirestore(app);
+            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+            window.firebaseDb = db;
+            window.firebaseAuth = auth;
+            window.appId = appId;
+
+            const initAuth = async () => {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (error) { console.error("Auth hatası:", error); }
+            };
+            initAuth();
+
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    window.currentUser = user;
+                    if (window.activeProfile) window.loadHistory();
+                }
+            });
+        }
+    </script>
+
+    <style>
+        :root {
+            --primary: #6366f1;
+            --accent: #ff0080;
+            --bg-gradient: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+        }
+
+        body[data-buddy="dragon"] {
+            --primary: #f97316;
+            --accent: #ef4444;
+            --bg-gradient: linear-gradient(-45deg, #f97316, #ef4444, #fbbf24, #ea580c);
+        }
+
+        body[data-buddy="fairy"] {
+            --primary: #ec4899;
+            --accent: #a855f7;
+            --bg-gradient: linear-gradient(-45deg, #ec4899, #a855f7, #f472b6, #d946ef);
+        }
+
+        body[data-buddy="robot"] {
+            --primary: #0ea5e9;
+            --accent: #6366f1;
+            --bg-gradient: linear-gradient(-45deg, #0ea5e9, #6366f1, #22d3ee, #3b82f6);
+        }
+
+        body[data-buddy="leaf"] {
+            --primary: #10b981;
+            --accent: #34d399;
+            --bg-gradient: linear-gradient(-45deg, #065f46, #10b981, #6ee7b7, #15803d);
+        }
+
+        body[data-buddy="cat"] {
+            --primary: #fbbf24;
+            --accent: #f59e0b;
+            --bg-gradient: linear-gradient(-45deg, #f59e0b, #fbbf24, #fde68a, #d97706);
+        }
+
+        body[data-buddy="bird"] {
+            --primary: #06b6d4;
+            --accent: #22d3ee;
+            --bg-gradient: linear-gradient(-45deg, #06b6d4, #0891b2, #67e8f9, #22d3ee);
+        }
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: var(--bg-gradient);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            transition: background 1s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        @keyframes gradientBG {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        /* Karakter Animasyonları */
+        @keyframes floatDragon {
+
+            0%,
+            100% {
+                transform: translateY(0) rotate(-2deg);
+            }
+
+            50% {
+                transform: translateY(-10px) rotate(2deg);
+            }
+        }
+
+        @keyframes shimmerFairy {
+
+            0%,
+            100% {
+                filter: brightness(1) drop-shadow(0 0 5px #f472b6);
+                transform: scale(1);
+            }
+
+            50% {
+                filter: brightness(1.3) drop-shadow(0 0 15px #f472b6);
+                transform: scale(1.05);
+            }
+        }
+
+        @keyframes jitterRobot {
+
+            0%,
+            100% {
+                transform: translate(0, 0);
+            }
+
+            10%,
+            30%,
+            50%,
+            70%,
+            90% {
+                transform: translate(-1px, 1px);
+            }
+
+            20%,
+            40%,
+            60%,
+            80% {
+                transform: translate(1px, -1px);
+            }
+        }
+
+        @keyframes jumpRabbit {
+
+            0%,
+            20%,
+            50%,
+            80%,
+            100% {
+                transform: translateY(0);
+            }
+
+            40% {
+                transform: translateY(-20px);
+            }
+
+            60% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes wiggleCat {
+
+            0%,
+            100% {
+                transform: rotate(0deg) scale(1);
+            }
+
+            25% {
+                transform: rotate(-5deg) scale(1.1);
+            }
+
+            75% {
+                transform: rotate(5deg) scale(1.1);
+            }
+        }
+
+        @keyframes flyPlus {
+
+            0%,
+            100% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+
+            25% {
+                transform: translate(5px, -10px) rotate(5deg);
+            }
+
+            75% {
+                transform: translate(-5px, -15px) rotate(-5deg);
+            }
+        }
+
+        .buddy-dragon-anim {
+            animation: floatDragon 3s infinite ease-in-out;
+        }
+
+        .buddy-fairy-anim {
+            animation: shimmerFairy 2s infinite ease-in-out;
+        }
+
+        .buddy-robot-anim {
+            animation: jitterRobot 0.5s infinite linear;
+        }
+
+        .buddy-leaf-anim {
+            animation: jumpRabbit 1.2s infinite;
+        }
+
+        .buddy-cat-anim {
+            animation: wiggleCat 2s infinite ease-in-out;
+        }
+
+        .buddy-bird-anim {
+            animation: flyPlus 2s infinite ease-in-out;
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            z-index: 1;
+            animation: floatParticle 10s infinite linear;
+            opacity: 0.6;
+        }
+
+        @keyframes floatParticle {
+            0% {
+                transform: translateY(110vh) rotate(0deg);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 0.6;
+            }
+
+            90% {
+                opacity: 0.6;
+            }
+
+            100% {
+                transform: translateY(-10vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .title-font {
+            font-family: 'Fredoka One', cursive;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(15px);
+            border-radius: 1.5rem;
+            border: 2px solid white;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .buddy-btn {
+            transform: scale(0.85);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            filter: grayscale(0.7);
+            opacity: 0.5;
+        }
+
+        .buddy-active {
+            filter: grayscale(0);
+            opacity: 1;
+            transform: scale(1.1);
+            border-color: white !important;
+            background: rgba(255, 255, 255, 0.3) !important;
+            box-shadow: 0 0 15px white;
+        }
+
+        .btn-game {
+            background: var(--primary);
+            color: white;
+            border-bottom: 5px solid rgba(0, 0, 0, 0.2);
+            transition: all 0.2s;
+            border-radius: 1rem;
+        }
+
+        .btn-game:active {
+            transform: translateY(3px);
+            border-bottom-width: 0px;
+        }
+
+        .num-selector-btn {
+            background: white;
+            color: var(--primary);
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            border-radius: 0.75rem;
+        }
+
+        .num-selector-btn.active {
+            background: var(--primary);
+            color: white !important;
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .num-selector-btn.is-hard {
+            border-color: #fbbf24;
+            border-width: 3px;
+            background: #fffcf0;
+            box-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+        }
+
+        .scrollable {
+            overflow-y: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .scrollable::-webkit-scrollbar {
+            display: none;
+        }
+
+        .chat-bubble {
+            max-width: 85%;
+            padding: 0.75rem 1rem;
+            border-radius: 1.25rem;
+            margin-bottom: 0.75rem;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            position: relative;
+            animation: popIn 0.3s ease-out;
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .chat-bubble.buddy {
+            background: white;
+            color: #333;
+            align-self: flex-start;
+            border-bottom-left-radius: 0.25rem;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            border: 2px solid var(--primary);
+        }
+
+        .chat-bubble.user {
+            background: var(--primary);
+            color: white;
+            align-self: flex-end;
+            border-bottom-right-radius: 0.25rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .curtain {
+            background: #7f1d1d;
+            height: 100%;
+            width: 50%;
+            position: absolute;
+            top: 0;
+            z-index: 2000;
+            transition: transform 2s ease-in-out;
+            pointer-events: none;
+        }
+
+        .curtain-left {
+            left: 0;
+            border-right: 2px solid #450a0a;
+        }
+
+        .curtain-right {
+            right: 0;
+            border-left: 2px solid #450a0a;
+        }
+
+        .theater-open .curtain-left {
+            transform: translateX(-100%);
+        }
+
+        .theater-open .curtain-right {
+            transform: translateX(100%);
+        }
+
+        .actor {
+            transition: all 0.5s ease;
+            opacity: 0.4;
+            transform: scale(0.8);
+        }
+
+        .actor-active {
+            opacity: 1;
+            transform: scale(1.2) !important;
+            z-index: 50;
+        }
+
+        .timer-bar-container {
+            width: 100%;
+            height: 8px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        #timer-bar {
+            width: 100%;
+            height: 100%;
+            background: #22c55e;
+            transition: width 0.15s linear;
+        }
+
+        .btn-disabled {
+            opacity: 0.4 !important;
+            filter: grayscale(1) !important;
+            cursor: not-allowed !important;
+            pointer-events: none !important;
+        }
+
+        #profile-modal {
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 6000;
+        }
+
+        .mastery-circle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+            color: white;
+            border: 2px solid white;
+            transition: all 0.3s;
+        }
+
+        .mastery-low {
+            background: #ef4444;
+        }
+
+        .mastery-mid {
+            background: #facc15;
+        }
+
+        .mastery-high {
+            background: #22c55e;
+        }
+
+        .shimmer {
+            background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 1rem;
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: 200% 0;
+            }
+
+            100% {
+                background-position: -200% 0;
+            }
+        }
+
+        .ai-badge-img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            border: 4px solid #fbbf24;
+            margin: 10px auto;
+            object-fit: cover;
+        }
+    </style>
+</head>
+
+<body data-buddy="dragon">
+
+    <!-- Profil Seçim Ekranı -->
+    <div id="profile-modal" class="fixed inset-0 p-6">
+        <div class="glass-card p-8 w-full max-w-sm text-center border-4 border-indigo-400">
+            <h2 class="title-font text-2xl text-indigo-700 mb-2">Kahraman Kim? ✨</h2>
+            <div class="grid grid-cols-1 gap-4 mt-6">
+                <button onclick="window.selectProfile('Akif')"
+                    class="py-4 bg-blue-500 text-white title-font text-xl rounded-2xl shadow-xl border-b-8 border-blue-700 active:translate-y-2 active:border-b-0 transition-all">👨
+                    Akif (5050)</button>
+                <button onclick="window.selectProfile('Aleda')"
+                    class="py-4 bg-pink-500 text-white title-font text-xl rounded-2xl shadow-xl border-b-8 border-pink-700 active:translate-y-2 active:border-b-0 transition-all">👧
+                    Aleda (4680)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="particle-container" class="fixed inset-0 pointer-events-none"></div>
+
+    <header
+        class="bg-white/80 backdrop-blur shadow-sm px-2 py-1 flex items-center justify-between shrink-0 z-[100] rounded-b-2xl">
+        <div class="flex flex-col text-left px-2 overflow-hidden">
+            <h1 class="title-font text-indigo-600 text-[10px] whitespace-nowrap leading-tight">✨ AI Matematik ✨</h1>
+            <span id="active-user-label" class="text-[8px] font-bold text-gray-400 uppercase truncate">Giriş
+                Yapılmadı</span>
+        </div>
+        <div class="flex space-x-1 overflow-x-auto px-1">
+            <button onclick="window.setBuddy('dragon')" id="buddy-dragon"
+                class="buddy-btn p-1 rounded-xl border-2 border-transparent flex flex-col items-center shrink-0">
+                <span class="text-lg md:text-xl buddy-icon">🐲</span>
+                <span class="text-[6px] font-bold text-gray-500 uppercase">Alev</span>
+            </button>
+            <button onclick="window.setBuddy('fairy')" id="buddy-fairy"
+                class="buddy-btn p-1 rounded-xl border-2 border-transparent flex flex-col items-center shrink-0">
+                <span class="text-lg md:text-xl buddy-icon">🧚‍♀️</span>
+                <span class="text-[6px] font-bold text-gray-500 uppercase">Işıltı</span>
+            </button>
+            <button onclick="window.setBuddy('robot')" id="buddy-robot"
+                class="buddy-btn p-1 rounded-xl border-2 border-transparent flex flex-col items-center shrink-0">
+                <span class="text-lg md:text-xl buddy-icon">🤖</span>
+                <span class="text-[6px] font-bold text-gray-400 uppercase">Çark</span>
+            </button>
+            <button onclick="window.setBuddy('leaf')" id="buddy-leaf"
+                class="buddy-btn p-1 rounded-xl border-2 border-transparent flex flex-col items-center shrink-0">
+                <span class="text-lg md:text-xl buddy-icon">🐰</span>
+                <span class="text-[6px] font-bold text-gray-400 uppercase">Yaprak</span>
+            </button>
+            <button onclick="window.setBuddy('cat')" id="buddy-cat"
+                class="buddy-btn p-1 rounded-xl border-2 border-transparent flex flex-col items-center shrink-0">
+                <span class="text-lg md:text-xl buddy-icon">🐱</span>
+                <span class="text-[6px] font-bold text-gray-400 uppercase">Altın</span>
+            </button>
+            <button onclick="window.setBuddy('bird')" id="buddy-bird"
+                class="buddy-btn p-1 rounded-xl border-2 border-transparent flex flex-col items-center shrink-0">
+                <span class="text-lg md:text-xl buddy-icon">➕🐦</span>
+                <span class="text-[6px] font-bold text-gray-400 uppercase">Artı</span>
+            </button>
+        </div>
+    </header>
+
+    <nav class="flex justify-center p-1 gap-1 shrink-0 z-50">
+        <button onclick="window.handleLearnClick()" id="btn-learn"
+            class="flex-1 max-w-[80px] py-1.5 rounded-xl font-bold text-[9px] btn-game shadow-lg transition-all">📖
+            ÖĞREN</button>
+        <button onclick="window.switchMode('quiz')" id="btn-quiz"
+            class="flex-1 max-w-[80px] py-1.5 rounded-xl font-bold text-[9px] bg-white text-gray-500 shadow-md transition-all">🎮
+            YARIŞ</button>
+        <button onclick="window.switchMode('chat')" id="btn-chat"
+            class="flex-1 max-w-[80px] py-1.5 rounded-xl font-bold text-[9px] bg-white text-gray-500 shadow-md transition-all">💬
+            SOHBET</button>
+        <button onclick="window.switchMode('coach')" id="btn-coach"
+            class="flex-1 max-w-[80px] py-1.5 rounded-xl font-bold text-[9px] bg-white text-gray-500 shadow-md transition-all">🚀
+            KOÇ</button>
+        <button onclick="window.switchMode('theater')" id="btn-theater"
+            class="flex-1 max-w-[80px] py-1.5 rounded-xl font-bold text-[9px] bg-white text-gray-500 shadow-md transition-all">🎭
+            SAHNE</button>
+    </nav>
+
+    <main class="flex-1 overflow-hidden relative">
+        <div class="content-wrap max-w-4xl mx-auto w-full h-full flex flex-col p-2">
+
+            <div id="status-bar"
+                class="mb-2 glass-card p-2 flex items-center justify-between gap-2 shrink-0 border-white/50">
+                <div class="flex items-center space-x-2 overflow-hidden px-2">
+                    <span id="daily-icon" class="text-xl">🔥</span>
+                    <div id="daily-task-content"
+                        class="text-[10px] text-gray-600 font-bold italic truncate uppercase tracking-tighter uppercase">
+                        Hoş Geldiniz Şampiyonlar! ✨</div>
+                </div>
+                <div class="flex gap-1 shrink-0">
+                    <button onclick="window.getAiChallenge()"
+                        class="text-[9px] bg-yellow-400 text-white px-2.5 py-1.5 rounded-lg font-bold shadow-sm uppercase">GÖREV</button>
+                    <button onclick="window.getMathFortune()"
+                        class="text-[9px] bg-white text-pink-500 px-2.5 py-1.5 rounded-lg font-bold shadow-sm border border-pink-100 uppercase">FAL</button>
+                </div>
+            </div>
+
+            <!-- MODLAR -->
+            <section id="learn-section" class="flex-1 flex flex-col min-h-0">
+                <div class="grid grid-cols-10 gap-0.5 mb-2 shrink-0" id="number-grid"></div>
+                <div id="table-display"
+                    class="grid grid-cols-2 sm:grid-cols-5 gap-1.5 scrollable content-start flex-1 py-1"></div>
+                <div id="ai-info-panel"
+                    class="mt-2 glass-card p-3 shadow-xl hidden shrink-0 border-white/50 text-center relative overflow-hidden">
+                    <div id="ai-loading-img" class="hidden shimmer w-full h-40 mb-2"></div>
+                    <div id="ai-img-container" class="hidden mb-2 rounded-xl overflow-hidden border-2 border-white">
+                    </div>
+                    <div id="ai-content" class="text-[11px] text-gray-700 leading-tight mb-2 font-semibold italic">
+                        Sayını seç ve maceraya başla! ➕</div>
+                    <div class="flex gap-2">
+                        <button onclick="window.askAi('explain')"
+                            class="flex-1 text-[9px] btn-game py-3 rounded-xl font-bold uppercase">✨ SIRRI
+                            NEDİR?</button>
+                        <button onclick="window.askAi('story')"
+                            class="flex-1 text-[9px] bg-yellow-400 text-white py-3 rounded-xl font-bold shadow-md uppercase">✨
+                            MASAL ANLAT</button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="quiz-section" class="hidden flex-1 flex flex-col min-h-0">
+                <div id="quiz-setup"
+                    class="m-auto glass-card p-8 shadow-2xl text-center max-w-sm border-4 border-indigo-200">
+                    <h3 class="text-xl title-font text-indigo-600 mb-2 uppercase">Zeka Savaşı!</h3>
+                    <p class="text-[10px] text-orange-500 font-bold mb-6 italic uppercase">15 Saniye, Kombo Yap, Rekoru
+                        Kır! 💎</p>
+                    <div class="flex flex-col gap-3">
+                        <button onclick="window.startQuiz('easy')"
+                            class="py-4 bg-green-500 text-white rounded-2xl font-bold shadow-xl text-lg uppercase transition-all">🏰
+                            KOLAY (1-5)</button>
+                        <button onclick="window.startQuiz('hard')"
+                            class="py-4 bg-orange-500 text-white rounded-2xl font-bold shadow-xl text-lg uppercase transition-all">🐉
+                            ZOR (6-10)</button>
+                    </div>
+                </div>
+                <div id="quiz-game" class="hidden h-full flex flex-col relative">
+                    <div id="combo-display"
+                        class="hidden absolute top-2 left-1/2 -translate-x-1/2 text-2xl font-bold text-yellow-400 z-50">
+                        0 KOMBO! 🔥</div>
+                    <div class="flex justify-between items-center mb-2 px-2">
+                        <button onclick="window.endGame()"
+                            class="text-[9px] font-bold text-white bg-red-500 px-4 py-2 rounded-full shadow-md active:scale-95 transition-all uppercase">🏁
+                            BİTİR</button>
+                        <div class="flex gap-2">
+                            <div
+                                class="text-[9px] font-bold text-white bg-indigo-600/90 px-3 py-1 rounded-full shadow-md">
+                                PUAN: <span id="score-text">0</span></div>
+                            <div id="lives-display"
+                                class="text-[9px] font-bold text-white bg-pink-500/90 px-3 py-1 rounded-full shadow-md">
+                                ❤️❤️❤️</div>
+                        </div>
+                    </div>
+                    <div class="px-2">
+                        <div class="timer-bar-container">
+                            <div id="timer-bar"></div>
+                        </div>
+                    </div>
+                    <div id="question-container"
+                        class="flex-1 flex items-center justify-center relative bg-white/80 border-4 border-white rounded-[2.5rem] shadow-2xl mb-3 overflow-hidden">
+                        <div id="question" class="title-font text-indigo-800 text-5xl md:text-7xl tracking-widest">? x ?
+                        </div>
+                        <button onclick="window.getAiHint()"
+                            class="absolute bottom-3 right-3 text-[8px] bg-yellow-400 text-white px-4 py-2 rounded-full font-bold shadow-lg uppercase">✨
+                            AI İPUCU</button>
+                    </div>
+                    <div id="options" class="grid grid-cols-2 gap-3 mb-1 shrink-0 px-2 pb-2"></div>
+                </div>
+            </section>
+
+            <!-- SOHBET MODU -->
+            <section id="chat-section" class="hidden flex-1 flex flex-col min-h-0">
+                <div id="chat-window"
+                    class="flex-1 scrollable bg-white/30 rounded-2xl p-3 flex flex-col mb-2 space-y-2"></div>
+                <div class="flex flex-wrap gap-1 mb-2">
+                    <button onclick="window.getAiDetectiveCase()"
+                        class="text-[8px] bg-indigo-500 text-white px-3 py-2 rounded-full font-bold uppercase">✨
+                        DEDEKTİF DOSYASI BAŞLAT</button>
+                </div>
+                <div
+                    class="flex gap-2 p-2 bg-white/90 backdrop-blur rounded-2xl shadow-lg border-2 border-white shrink-0">
+                    <input type="text" id="chat-input" placeholder="Karakterine bir şeyler sor..."
+                        class="flex-1 bg-transparent border-none focus:ring-0 text-sm px-3 outline-none font-bold"
+                        onkeypress="if(event.key === 'Enter') window.sendChatMessage()">
+                    <button onclick="window.sendChatMessage()"
+                        class="bg-indigo-600 text-white px-6 py-2 rounded-xl font-bold shadow text-xs uppercase active:scale-95 transition-all">GÖNDER</button>
+                </div>
+            </section>
+
+            <!-- KOÇ MODU -->
+            <section id="coach-section" class="hidden flex-1 flex flex-col min-h-0 scrollable gap-2 pb-4">
+                <div class="glass-card p-4 shadow-xl border-white/50 text-center shrink-0">
+                    <div id="ai-medal-container" class="hidden">
+                        <img id="ai-medal-img" class="ai-badge-img" src="" alt="Madalya">
+                        <p class="text-[9px] font-bold text-yellow-600 uppercase mb-2">✨ GÜNÜN ÖZEL MADALYASI ✨</p>
+                    </div>
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="text-left">
+                            <h3 class="text-lg font-bold text-indigo-700 title-font uppercase leading-tight">Ustalık
+                                Paneli</h3>
+                            <p id="rank-label" class="text-[10px] font-bold text-pink-500 uppercase italic">Veriler
+                                Analiz Ediliyor...</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 mb-4 text-center">
+                        <div
+                            class="bg-yellow-100 p-2 rounded-xl border-b-4 border-yellow-200 text-yellow-900 font-bold">
+                            <div class="text-[8px]">REKOR</div>
+                            <div id="high-score-display">0</div>
+                        </div>
+                        <div class="bg-green-100 p-2 rounded-xl border-b-4 border-green-200 text-green-900 font-bold">
+                            <div class="text-[8px]">BAŞARI</div>
+                            <div id="total-correct-count">0</div>
+                        </div>
+                        <div class="bg-red-100 p-2 rounded-xl border-b-4 border-red-200 text-red-900 font-bold">
+                            <div class="text-[8px]">HATA</div>
+                            <div id="total-mistake-count">0</div>
+                        </div>
+                    </div>
+                    <div id="coach-loading" class="hidden flex justify-center py-2">
+                        <div class="w-5 h-5 border-2 border-primary border-t-transparent animate-spin rounded-full">
+                        </div>
+                    </div>
+                    <div id="coach-analysis"
+                        class="text-[11px] italic text-gray-700 bg-white/60 p-3 rounded-xl border-2 border-indigo-100 leading-relaxed text-left min-h-[50px]">
+                        Rekorun için yeni bir madalya tasarlamamı ister misin? 🚀
+                    </div>
+                    <div class="flex gap-2 mt-3">
+                        <button onclick="window.getAiStrategy()"
+                            class="flex-1 py-2.5 bg-indigo-600 text-white rounded-xl font-bold text-[9px] shadow-lg uppercase">✨
+                            STRATEJİ AL</button>
+                        <button onclick="window.generateMedal()"
+                            class="flex-1 py-2.5 bg-yellow-400 text-white rounded-xl font-bold text-[9px] shadow-lg uppercase">✨
+                            MADALYA TASARLA</button>
+                    </div>
+                </div>
+                <div id="history-list" class="space-y-2 glass-card p-4 border-white/50 flex-1"></div>
+            </section>
+
+        </div>
+    </main>
+
+    <div id="overlay" class="fixed inset-0 bg-black/95 hidden items-center justify-center z-[5000] p-4">
+        <div
+            class="bg-white rounded-[3rem] p-6 max-w-xs w-full text-center shadow-2xl border-[8px] border-indigo-100 overflow-y-auto max-h-[90vh]">
+            <div class="text-6xl mb-2 animate-bounce" id="overlay-emoji">🎉</div>
+            <h2 class="text-2xl font-bold text-indigo-700 title-font uppercase">SONUÇ!</h2>
+            <div id="ai-praise-content"
+                class="bg-indigo-50 p-4 rounded-xl mb-4 border border-indigo-100 text-[11px] text-gray-600 italic leading-snug">
+            </div>
+            <button onclick="window.closeOverlay()"
+                class="w-full py-4 bg-indigo-600 text-white rounded-xl font-bold text-sm shadow-lg active:scale-95 transition-all uppercase">DEVAM
+                ET! 🚀</button>
+        </div>
+    </div>
+
+    <script>
+        const apiKey = "";
+        let score = 0, lives = 3, correctAnswer = 0, currentN1 = 0, currentN2 = 0, quizRange = [];
+        let currentBuddy = 'dragon', mistakesInSession = [], correctAnswers = [];
+        let chatHistory = [];
+        let isQuizActive = false;
+        let activeProfile = "";
+        let comboCount = 0;
+        let timeLeft = 100;
+        let timerInterval = null;
+        window.personalBest = 0;
+
+        const buddies = {
+            dragon: { name: 'Alev', icon: '🐲', dailyIcon: '🔥', animClass: 'buddy-dragon-anim', prompt: 'Sen neşeli bir ejderhasın.' },
+            fairy: { name: 'Işıltı', icon: '🧚‍♀️', dailyIcon: '✨', animClass: 'buddy-fairy-anim', prompt: 'Sen nazik bir perisin.' },
+            robot: { name: 'Çark', icon: '🤖', dailyIcon: '⚡', animClass: 'buddy-robot-anim', prompt: 'Sen zeki bir robotsun.' },
+            leaf: { name: 'Yaprak', icon: '🐰', dailyIcon: '🥕', animClass: 'buddy-leaf-anim', prompt: 'Sen havuç seven neşeli bir tavşansın.' },
+            cat: { name: 'Altın', icon: '🐱', dailyIcon: '✨', animClass: 'buddy-cat-anim', prompt: 'Sen aristokrat, altın tüylü bir kedisin.' },
+            bird: { name: 'Artı', icon: '➕🐦', dailyIcon: '☁️', animClass: 'buddy-bird-anim', prompt: 'Sen sihirli bir artı (+) şeklindeki kuşsun.' }
+        };
+
+        async function apiRetry(fn) {
+            for (let i = 0; i < 5; i++) {
+                try { const r = await fn(); if (r && !r.error) return r; } catch (e) { if (i === 4) throw e; await new Promise(res => setTimeout(res, Math.pow(2, i) * 1000)); }
+            }
+            return null;
+        }
+
+        async function callGeminiText(prompt, sysInstruction = "", isChat = false) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            const sys = (sysInstruction || buddies[currentBuddy].prompt) + ` Kullanıcı: ${activeProfile}. Çok neşeli ol. Çarpma işlemlerini 'N çarpı M eşittir R' olarak açıkla.`;
+            let contents = isChat ? chatHistory.map(m => ({ role: m.role === 'buddy' ? 'model' : 'user', parts: [{ text: m.text }] })) : [];
+            contents.push({ role: 'user', parts: [{ text: prompt }] });
+            const result = await apiRetry(() => fetch(url, { method: 'POST', body: JSON.stringify({ contents, systemInstruction: { parts: [{ text: sys }] } }) }).then(r => r.json()));
+            return result?.candidates?.[0]?.content?.parts?.[0]?.text || "Teknik bir sorun oldu!";
+        }
+
+        async function callGeminiTts(text) {
+            if (!text) return Promise.resolve();
+            const speechText = text.replace(/(\d+)\s*[xX*]\s*(\d+)\s*=\s*(\d+)/g, "$1 çarpı $2 eşittir $3");
+            return new Promise(async (resolve) => {
+                try {
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+                    const result = await apiRetry(() => fetch(url, {
+                        method: 'POST', body: JSON.stringify({
+                            contents: [{ parts: [{ text: `Heyecanla söyle: ${speechText}` }] }],
+                            generationConfig: { responseModalities: ["AUDIO"], speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: "Kore" } } } },
+                            model: "gemini-2.5-flash-preview-tts"
+                        })
+                    }).then(r => r.json()));
+                    const b64 = result?.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+                    if (b64) { const audio = playAudio(b64); audio.onended = () => resolve(); } else resolve();
+                } catch (err) { resolve(); }
+            });
+        }
+
+        async function callImagen(prompt) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict?key=${apiKey}`;
+            const result = await apiRetry(() => fetch(url, { method: 'POST', body: JSON.stringify({ instances: [{ prompt }], parameters: { sampleCount: 1 } }) }).then(r => r.json()));
+            return result?.predictions?.[0]?.bytesBase64Encoded ? `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}` : null;
+        }
+
+        function playAudio(base64) {
+            const binary = atob(base64), bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            const audio = new Audio(URL.createObjectURL(new Blob([createWavHeader(bytes.buffer, 24000)], { type: 'audio/wav' })));
+            audio.play();
+            return audio;
+        }
+
+        function createWavHeader(pcmBuffer, sampleRate) {
+            const header = new ArrayBuffer(44), view = new DataView(header);
+            const writeStr = (off, s) => { for (let i = 0; i < s.length; i++) view.setUint8(off + i, s.charCodeAt(i)); };
+            writeStr(0, 'RIFF'); view.setUint32(4, 32 + pcmBuffer.byteLength, true); writeStr(8, 'WAVE'); writeStr(12, 'fmt ');
+            view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, 1, true); view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true); view.setUint16(32, 2, true); view.setUint16(34, 16, true); writeStr(36, 'data');
+            view.setUint32(40, pcmBuffer.byteLength, true);
+            const wav = new Uint8Array(44 + pcmBuffer.byteLength);
+            wav.set(new Uint8Array(header), 0); wav.set(new Uint8Array(pcmBuffer), 44);
+            return wav.buffer;
+        }
+
+        window.setBuddy = function (t) {
+            currentBuddy = t;
+            document.body.setAttribute('data-buddy', t);
+            ['dragon', 'fairy', 'robot', 'leaf', 'cat', 'bird'].forEach(b => {
+                const el = document.getElementById(`buddy-${b}`);
+                const icon = el?.querySelector('.buddy-icon');
+                if (el) el.classList.remove('buddy-active');
+                if (icon) icon.classList.remove('buddy-dragon-anim', 'buddy-fairy-anim', 'buddy-robot-anim', 'buddy-leaf-anim', 'buddy-cat-anim', 'buddy-bird-anim');
+            });
+            const activeEl = document.getElementById(`buddy-${t}`);
+            if (activeEl) {
+                activeEl.classList.add('buddy-active');
+                const activeIcon = activeEl.querySelector('.buddy-icon');
+                if (activeIcon) activeIcon.classList.add(buddies[t].animClass);
+            }
+            const di = document.getElementById('daily-icon'); if (di) di.innerText = buddies[t].dailyIcon;
+            window.triggerMagicEffects();
+        };
+
+        window.loadTable = function (n) {
+            document.querySelectorAll('.num-selector-btn').forEach(b => b.classList.remove('active'));
+            const cont = document.getElementById('table-display'); if (!cont) return;
+            cont.innerHTML = '';
+            for (let i = 1; i <= 10; i++) {
+                const c = document.createElement('div');
+                c.className = "glass-card p-2 text-center text-[11px] font-bold text-indigo-900 border-white/40 shadow-sm cursor-pointer hover:scale-105 transition-all";
+                c.onclick = () => { currentN1 = n; currentN2 = i; document.getElementById('ai-info-panel').classList.remove('hidden'); callGeminiTts(`${n} çarpı ${i} eşittir ${n * i}`); };
+                c.innerText = `${n} x ${i} = ${n * i}`; cont.appendChild(c);
+            }
+        };
+
+        window.initNumberGrid = function () {
+            const grid = document.getElementById('number-grid'); if (!grid) return;
+            grid.innerHTML = '';
+            for (let i = 1; i <= 10; i++) {
+                const b = document.createElement('button');
+                b.className = `p-1.5 rounded-lg border-2 border-white/50 font-bold text-[10px] text-indigo-700 bg-white/80 shadow-sm num-selector-btn ${i >= 6 && i <= 9 ? 'is-hard' : ''}`;
+                b.innerText = i; b.onclick = () => {
+                    document.querySelectorAll('.num-selector-btn').forEach(btn => btn.classList.remove('active'));
+                    b.classList.add('active');
+                    window.loadTable(i);
+                };
+                grid.appendChild(b);
+            }
+        };
+
+        window.selectProfile = (name) => {
+            activeProfile = name;
+            document.getElementById('profile-modal').style.display = 'none';
+            document.getElementById('active-user-label').innerText = "OYUNCU: " + name;
+            window.personalBest = name === "Akif" ? 5050 : 4680;
+            document.getElementById('high-score-display').innerText = window.personalBest;
+            window.loadHistory();
+            window.setBuddy('dragon');
+            callGeminiTts(`Selam ${name}! Senin için Gemini zekasını hazır ettim!`);
+        };
+
+        window.switchMode = function (m) {
+            ['learn', 'quiz', 'chat', 'coach', 'theater'].forEach(s => {
+                const el = document.getElementById(`${s}-section`);
+                const btn = document.getElementById(`btn-${s}`);
+                if (el) el.classList.add('hidden');
+                if (btn) btn.className = "flex-1 max-w-[80px] py-1.5 rounded-xl font-bold text-[9px] bg-white text-gray-500 shadow-md";
+            });
+            const ts = document.getElementById(`${m}-section`);
+            const tb = document.getElementById(`btn-${m}`);
+            if (ts) ts.classList.remove('hidden');
+            if (tb) tb.className = "flex-1 max-w-[80px] py-1.5 rounded-xl font-bold text-[10px] btn-game shadow-lg";
+            const lb = document.getElementById('btn-learn');
+            if (lb) { if (isQuizActive) lb.classList.add('btn-disabled'); else lb.classList.remove('btn-disabled'); }
+            if (m === 'coach') window.loadHistory();
+        };
+
+        window.handleLearnClick = () => {
+            if (isQuizActive) { callGeminiTts("Yarışırken öğrenme kilitli kanka!"); return; }
+            window.switchMode('learn');
+        };
+
+        window.startQuiz = function (t) {
+            document.getElementById('quiz-setup').classList.add('hidden');
+            document.getElementById('quiz-game').classList.remove('hidden');
+            quizRange = t === 'easy' ? [1, 2, 3, 4, 5] : [6, 7, 8, 9];
+            score = 0; lives = 3; comboCount = 0; mistakesInSession = [];
+            isQuizActive = true;
+            window.updateStats(); window.nextQuestion();
+        };
+
+        window.nextQuestion = function () {
+            if (timerInterval) clearInterval(timerInterval);
+            timeLeft = 100; updateTimerBar();
+            currentN1 = quizRange[Math.floor(Math.random() * quizRange.length)];
+            currentN2 = Math.floor(Math.random() * 10) + 1;
+            correctAnswer = currentN1 * currentN2;
+            const qe = document.getElementById('question'); if (qe) qe.innerHTML = `${currentN1} <span class="text-indigo-200">x</span> ${currentN2}`;
+            const div = document.getElementById('options'); if (!div) return;
+            div.innerHTML = '';
+            let opts = [correctAnswer];
+            while (opts.length < 4) { let w = Math.floor(Math.random() * 100); if (!opts.includes(w)) opts.push(w); }
+            opts.sort(() => Math.random() - 0.5);
+            opts.forEach(o => {
+                const b = document.createElement('button');
+                b.className = "py-4 glass-card text-indigo-800 font-bold text-2xl shadow-lg active:scale-95 transition-all border-white/60";
+                b.innerText = o; b.onclick = () => window.checkAnswer(o, b); div.appendChild(b);
+            });
+            timerInterval = setInterval(() => { timeLeft -= 1; if (timeLeft <= 0) { clearInterval(timerInterval); handleTimeOut(); } updateTimerBar(); }, 150);
+        };
+
+        function updateTimerBar() {
+            const bar = document.getElementById('timer-bar');
+            if (bar) { bar.style.width = timeLeft + "%"; bar.style.backgroundColor = timeLeft > 50 ? "#22c55e" : (timeLeft > 25 ? "#facc15" : "#ef4444"); }
+        }
+
+        function handleTimeOut() {
+            comboCount = 0; lives--; window.updateStats();
+            callGeminiTts("Zaman bitti şampiyon!");
+            if (lives <= 0) setTimeout(window.endGame, 1000); else setTimeout(window.nextQuestion, 1500);
+        }
+
+        window.checkAnswer = function (v, b) {
+            clearInterval(timerInterval);
+            if (v === correctAnswer) {
+                comboCount++;
+                let bp = ([6, 7, 8, 9].includes(currentN1) || [6, 7, 8, 9].includes(currentN2)) ? 30 : 10;
+                let bn = Math.floor(timeLeft / 4) + (comboCount * 5);
+                score += (bp + bn);
+                showBonusText(`+${bp + bn}`);
+                b.classList.add('bg-green-100', 'border-green-500');
+                window.triggerMagicEffects();
+                setTimeout(window.nextQuestion, 800);
+            } else {
+                comboCount = 0; lives--;
+                mistakesInSession.push({ n1: currentN1, n2: currentN2, wrong: v });
+                b.classList.add('bg-red-100', 'border-red-500');
+                if (lives <= 0) setTimeout(window.endGame, 1000); else setTimeout(window.nextQuestion, 2000);
+            }
+            window.updateStats();
+        };
+
+        function showBonusText(txt) {
+            const ga = document.getElementById('quiz-game');
+            const bn = document.createElement('div'); bn.className = 'bonus-float'; bn.innerText = txt;
+            bn.style.left = '10%'; bn.style.top = '40%';
+            if (ga) ga.appendChild(bn); setTimeout(() => bn.remove(), 1000);
+        }
+
+        window.updateStats = () => {
+            const st = document.getElementById('score-text'); if (st) st.innerText = score;
+            const ld = document.getElementById('lives-display'); if (ld) ld.innerText = '❤️'.repeat(lives);
+        };
+
+        window.endGame = async function () {
+            if (timerInterval) clearInterval(timerInterval);
+            isQuizActive = false; window.switchMode('learn');
+            document.getElementById('overlay').classList.replace('hidden', 'flex');
+
+            // --- ✨ AI MOTIVATION SYSTEM ✨ ---
+            let promptType = score < 1000 ? "Skor 1000'in altında. 'Ha gayret, ısınma turu bitti, çok iyi yoldasın' temalı neşeli bir motivasyon cümlesi kur." : "Skor yüksek. Müthiş bir başarı raporu yaz.";
+            const res = await callGeminiText(`Skor: ${score}. ${promptType}`);
+
+            document.getElementById('ai-praise-content').innerText = res;
+            await callGeminiTts(res);
+            if (window.saveResultToFirestore) await window.saveResultToFirestore({ score, mistakes: mistakesInSession, profile: activeProfile });
+        };
+
+        // --- ✨ NEW GEMINI POWERED FEATURES ✨ ---
+
+        // ✨ Matematik Dedektifi Görevi
+        window.getAiDetectiveCase = async () => {
+            const win = document.getElementById('chat-window');
+            const div = document.createElement('div');
+            div.className = `chat-bubble buddy italic`;
+            div.innerText = "Gizemli bir vaka inceleniyor... 🕵️‍♀️";
+            win.appendChild(div);
+
+            const prompt = "Akif ve Aleda için bir 'Matematik Dedektifliği' vakası uydur. Hikayenin içinde çözülmesi gereken bir çarpma işlemi olsun (Örn: 7x8). Hikaye heyecanlı ve kısa olsun.";
+            const res = await callGeminiText(prompt);
+            div.innerText = "🕵️‍♀️ DEDEKTİF NOTU: " + res;
+            await callGeminiTts(res);
+        };
+
+        // ✨ Eşsiz Madalya Tasarımcısı (Imagen)
+        window.generateMedal = async () => {
+            const el = document.getElementById('coach-analysis');
+            const container = document.getElementById('ai-medal-container');
+            const img = document.getElementById('ai-medal-img');
+            const loader = document.getElementById('coach-loading');
+
+            loader.classList.remove('hidden');
+            el.innerText = "Senin için dünyada eşi benzeri olmayan bir madalya tasarlıyorum... ✨";
+
+            const prompt = `A magical gold 3D achievement medal for a child who solved math, featuring a ${currentBuddy} theme, high quality digital art, sparkling.`;
+            const imgUrl = await callImagen(prompt);
+
+            loader.classList.add('hidden');
+            if (imgUrl) {
+                img.src = imgUrl;
+                container.classList.remove('hidden');
+                const praise = await callGeminiText("Bu madalyayı Akif ve Aleda'ya takdim ederken çok havalı bir cümle kur.");
+                el.innerText = praise;
+                await callGeminiTts(praise);
+            }
+        };
+
+        window.getAiHint = async () => { const r = await callGeminiText(`${currentN1}x${currentN2} cevabı için sihirli bir ipucu ver.`); await callGeminiTts(r); };
+        window.getAiStrategy = async () => {
+            const el = document.getElementById('coach-analysis'); const lo = document.getElementById('coach-loading');
+            if (el) el.innerText = "Analiz ediyorum... ✨"; if (lo) lo.classList.remove('hidden');
+            const res = await callGeminiText(`Rekor ${window.personalBest}. Taktik ver.`);
+            if (lo) lo.classList.add('hidden'); if (el) el.innerText = res;
+            await callGeminiTts(res);
+        };
+        window.askAi = async (t) => {
+            const res = await callGeminiText(t === 'explain' ? `${currentN1}x${currentN2} mantığı.` : `${currentN1}x${currentN2} masalı.`);
+            document.getElementById('ai-info-panel').classList.remove('hidden');
+            document.getElementById('ai-content').innerText = res;
+            if (t === 'story') {
+                document.getElementById('ai-loading-img').classList.remove('hidden');
+                const img = await callImagen(`3D pixar style art of ${currentN1} groups of ${currentN2} items.`);
+                document.getElementById('ai-loading-img').classList.add('hidden');
+                if (img) { document.getElementById('ai-img-container').innerHTML = `<img src="${img}" class="w-full">`; document.getElementById('ai-img-container').classList.remove('hidden'); }
+            }
+            await callGeminiTts(res);
+        };
+
+        window.sendChatMessage = async () => {
+            const input = document.getElementById('chat-input'); const text = input.value; if (!text) return;
+            input.value = '';
+            const res = await callGeminiText(text, "", true);
+            const div = document.createElement('div'); div.className = `chat-bubble buddy`; div.innerText = res;
+            document.getElementById('chat-window').appendChild(div);
+            await callGeminiTts(res);
+        };
+
+        window.triggerMagicEffects = function () {
+            const ems = ['⭐', '✨', '🔥', '💖', '🐰', '🥕', '🐱', '🦜', '☁️'];
+            for (let i = 0; i < 8; i++) {
+                const c = document.createElement('div'); c.className = 'particle'; c.innerText = ems[Math.floor(Math.random() * ems.length)];
+                c.style.left = Math.random() * 100 + 'vw'; const fb = Math.random() > 0.5; c.style.top = fb ? '110vh' : '-10vh';
+                document.body.appendChild(c); c.animate([{ transform: 'translateY(0) rotate(0)', opacity: 0 }, { transform: `translateY(${fb ? '-120vh' : '120vh'}) rotate(360deg)`, opacity: 1 }], { duration: 2000 }).onfinish = () => c.remove();
+            }
+        };
+
+        window.getAiChallenge = async () => { const r = await callGeminiText("Zor bir bilmece sor."); document.getElementById('daily-task-content').innerText = r; await callGeminiTts(r); };
+        window.getMathFortune = async () => { const r = await callGeminiText("Kısa bir fal bak."); document.getElementById('daily-task-content').innerText = "🔮 " + r; await callGeminiTts(r); };
+        window.closeOverlay = function () { document.getElementById('overlay').classList.add('hidden'); window.switchMode('learn'); };
+
+        window.onload = () => { window.initNumberGrid(); window.loadTable(1); };
+    </script>
+
+    <script type="module">
+        import { collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.0.1/firebase-firestore.js";
+        window.saveResultToFirestore = async (data) => {
+            if (!window.currentUser || !window.firebaseDb) return;
+            try {
+                const resultsCol = collection(window.firebaseDb, 'artifacts', window.appId, 'users', window.currentUser.uid, 'results');
+                await addDoc(resultsCol, { ...data, timestamp: Date.now(), dateStr: new Date().toLocaleString('tr-TR') });
+                window.loadHistory();
+            } catch (error) { console.error("Kaydetme hatası:", error); }
+        };
+        window.loadHistory = async () => {
+            if (!window.currentUser || !window.firebaseDb || !activeProfile) return;
+            try {
+                const resultsCol = collection(window.firebaseDb, 'artifacts', window.appId, 'users', window.currentUser.uid, 'results');
+                const querySnapshot = await getDocs(resultsCol);
+                const results = [];
+                querySnapshot.forEach((doc) => results.push(doc.data()));
+                const profileResults = results.filter(r => r.profile === activeProfile);
+                profileResults.sort((a, b) => b.timestamp - a.timestamp);
+                let currentMax = activeProfile === "Akif" ? 5050 : 4680;
+                profileResults.forEach(r => { if (r.score > currentMax) currentMax = r.score; });
+                window.personalBest = currentMax;
+                const hs = document.getElementById('high-score-display'); if (hs) hs.innerText = currentMax;
+            } catch (error) { console.error("Yükleme hatası:", error); }
+        };
+    </script>
+</body>
+
+</html>
